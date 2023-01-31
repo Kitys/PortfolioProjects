@@ -1,0 +1,198 @@
+SQL Exploration:
+
+Edited in Excel to create two tables;
+	Covid Deaths
+	Covid Vaccinations
+
+Uploaded to BigQuery Sandbox
+
+Query’s made in chronological order
+
+--checking to see if the tables uploaded correctly:
+
+SELECT *
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+ORDER BY 3,4
+
+SELECT *
+FROM `sql-exploration-376320.CovidInformation.CovidVaccinations`
+ORDER BY 3,4
+
+
+-- Organizing the data into a smaller subset for initial analysis
+
+
+SELECT Location, date, total_cases, new_cases, total_deaths, population
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+ORDER BY 1,2
+
+
+-- Looking at Total Cases vs. Total Deaths
+
+SELECT Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS DeathPercentage
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+ORDER BY 1,2
+
+-- Decided to focus on Cases Vs. Deaths in the United States just for local frame of reference
+
+SELECT Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS DeathPercentage
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE Location LIKE '%United States%'
+ORDER BY 1,2
+
+-- Removal of The Virgin Islands
+-- Shows the likelihood of death if you contract covid in the United States
+
+SELECT Location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS DeathPercentage
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE Location LIKE '%United States%'
+AND Location NOT LIKE '%Virgin Islands%'
+ORDER BY 1,2
+
+-- Looking at Total Cases Vs. Population
+-- Shows what percentage of the population got Covid
+
+SELECT Location, date, total_cases, population, (total_cases/population)*100 AS InfectedPercent
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE Location LIKE '%United States%'
+AND Location NOT LIKE '%Virgin Islands%'
+ORDER BY 1,2
+
+-- Summarizing the US with the Highest Infection rate compared to the Population
+
+
+SELECT Location, MAX(total_cases) AS HighestInfectionCount, population, MAX((total_cases/population))*100 AS PercentPopulationInfected
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE Location LIKE '%United States%'
+AND Location NOT LIKE '%Virgin Islands%'
+GROUP BY Location, population
+
+
+-- Looking at ALL countries Highest Infection rate compared to the Population
+
+
+SELECT Location, MAX(total_cases) AS HighestInfectionCount, population, MAX((total_cases/population))*100 AS PercentPopulationInfected
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+-- WHERE Location LIKE '%United States%'
+-- AND Location NOT LIKE '%Virgin Islands%'
+GROUP BY Location, population
+ORDER BY PercentPopulationInfected DESC
+
+
+-- Showing Countries with the Highest Death rate compared per Population
+-- Removal of United States Clause for a Worldwide Perspective 
+-- The following query had an issue with the total_deaths data type. Cast it as an integer to fix.
+
+
+SELECT Location, MAX(CAST(total_deaths AS INT)) AS TotalDeathCount
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+GROUP BY location
+ORDER BY TotalDeathCount DESC
+
+
+-- This showed the data was grouped by continents as well. The below query fixes that.
+
+
+SELECT Location, MAX(CAST(total_deaths AS INT)) AS TotalDeathCount
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE continent IS NOT NULL
+GROUP BY location
+ORDER BY TotalDeathCount DESC
+
+
+-- Became curious about what the numbers were by Continent, and decided to check that.
+-- Shows the continents with the highest death count per population
+
+
+SELECT location, MAX(CAST(total_deaths AS INT)) AS TotalDeathCount
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE continent IS NULL
+GROUP BY location
+ORDER BY TotalDeathCount DESC
+
+
+-- Preparation for putting into Tableau
+-- Global Numbers by Day
+
+
+SELECT date, SUM(new_cases) AS TotalGlobalCases, SUM(cast(new_deaths AS INT)) AS TotalGlobalDeaths, SUM(new_deaths)/SUM(new_cases)*100 AS DeathPercentage
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE continent IS NOT NULL
+GROUP BY date
+ORDER BY 1,2
+
+
+-- Removal of Date and Group By of Date to see the Global Totals
+
+
+SELECT SUM(new_cases) AS TotalGlobalCases, SUM(cast(new_deaths AS INT)) AS TotalGlobalDeaths, SUM(new_deaths)/SUM(new_cases)*100 AS DeathPercentage
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths`
+WHERE continent IS NOT NULL
+--GROUP BY date
+ORDER BY 1,2
+-- Wanting to use the CovidVaccinations table for further analysis using JOIN
+-- Initial Join to make sure that everything is working properly
+
+
+Select *
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths` dea -- easier to type
+INNER JOIN `sql-exploration-376320.CovidInformation.CovidVaccinations` vac -- easier to type
+    ON dea.location = vac.location
+    AND dea.date = vac.date
+
+
+--Looking at Total Population Vs. Vaccinations
+
+
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+FROM `sql-exploration-376320.CovidInformation.CovidDeaths` dea
+INNER JOIN `sql-exploration-376320.CovidInformation.CovidVaccinations` vac
+    ON dea.location = vac.location
+    AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 1,2,3
+
+
+-- Using a CTE for simplification.
+
+
+WITH PopvsVac AS (
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+      SUM(CAST(vac.new_vaccinations AS INT)) OVER (PARTITION BY dea.location ORDER BY dea.location,
+      dea.date) AS RollingPeopleVaccinated
+  FROM `sql-exploration-376320.CovidInformation.CovidDeaths` dea
+  INNER JOIN `sql-exploration-376320.CovidInformation.CovidVaccinations` vac
+      ON dea.location = vac.location
+      AND dea.date = vac.date
+  WHERE dea.continent IS NOT NULL
+)
+SELECT *, (RollingPeopleVaccinated/Population)*100
+FROM PopvsVac
+
+
+-- Tried to create a table while using BigQuery Sandbox. I have unfortunately learned that with BigQuery sandbox I cannot use “CREATE TABLE”. Sad day :(
+-- Here is what I would have done, had CREATE TABLE existed in BigQuery
+
+
+DROP TABLE IF EXISTS #PercentPopulationVaccinated
+CREATE TABLE #PercentPopulationVaccinated
+(
+  Continent nvarchar(255),
+  Location nvarchar(255),
+  Date datetime,
+  Populatiuon numeric,
+  New_vaccinations numeric,
+  RollingPeopleVaccinated numeric
+)
+WITH PopvsVac AS (
+  SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+      SUM(CAST(vac.new_vaccinations AS INT)) OVER (PARTITION BY dea.location ORDER BY dea.location,
+      dea.date) AS RollingPeopleVaccinated
+  FROM `sql-exploration-376320.CovidInformation.CovidDeaths` dea
+  INNER JOIN `sql-exploration-376320.CovidInformation.CovidVaccinations` vac
+      ON dea.location = vac.location
+      AND dea.date = vac.date
+  WHERE dea.continent IS NOT NULL
+)
+SELECT *, (RollingPeopleVaccinated/Population)*100
+FROM PopvsVac
