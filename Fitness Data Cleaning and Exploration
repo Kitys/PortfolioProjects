@@ -1,0 +1,123 @@
+#Loading of our nescessary packages
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(ggplot2)
+
+#Setting our working directory
+setwd("C:/Users/onemi/Desktop/Coding Stuff/Coursera Case Study 2/Bellabeat_Fit_Data/Fitabase Data 4.12.16-5.12.16")
+
+#First Comparison
+daily_activity <- read.csv("dailyActivity_merged.csv")
+sleep_day <- read.csv("sleepDay_merged.csv")
+
+#cleaning of their titles
+clean_activity <- clean_names(daily_activity)
+clean_sleep <- clean_names(sleep_day)
+
+#Checking the new names
+colnames(clean_activity)
+colnames(clean_sleep)
+
+#Removal of the uncleaned Title dataframes
+rm(daily_activity)
+rm(sleep_day)
+
+#Checking for NAs in our datasets
+sum(is.na(clean_activity))
+sum(is.na(clean_sleep))
+
+#No NA's in our data. Yay :)
+
+#Both sets have the ID tag, so they can be merged into one
+
+#For some quick summary statistics from daily_activity
+clean_activity %>%  
+        select(total_steps,
+               total_distance,
+               sedentary_minutes) %>%
+        summary()
+
+#For some quick summary statistics from sleep_day
+clean_sleep %>%  
+        select(total_sleep_records,
+               total_minutes_asleep,
+               total_time_in_bed) %>%
+        summary()
+
+#Plotting explorations
+
+#What's the relationship between steps taken in a day and sedentary minutes?
+clean_activity %>% 
+        ggplot(aes( x = total_steps, y = sedentary_minutes)) + geom_point()
+
+#What's the relationship between total time asleep and total time in bed?
+clean_sleep %>% 
+        ggplot(aes(x = total_minutes_asleep, y = total_time_in_bed)) + geom_point()
+
+#What's the relationship between steps taken in a day and sedentary minutes?
+clean_activity %>% 
+        ggplot(aes( x = total_steps, y = sedentary_minutes)) +
+        geom_smooth() +
+        xlab( "Steps" ) +
+        ylab( "Minutes" ) +
+        ggtitle( "Total Steps vs. Sedentary Minutes" )
+
+#What's the relationship between steps taken in a day and very active minutes?
+clean_activity %>% 
+        ggplot(aes( x = total_steps, y = very_active_minutes)) +
+        geom_smooth() +
+        xlab( "Steps" ) +
+        ylab( "Minutes" ) +
+        ggtitle( "Total Steps vs. Very Active Minutes" )
+
+#What's the relationship between steps taken in a day and total distance?
+clean_activity %>% 
+        ggplot(aes( x = total_steps, y = total_distance)) +
+        geom_smooth() +
+        xlab( "Steps" ) +
+        ylab( "Distance (Miles)" ) +
+        ggtitle( "Total Steps vs. Total Distance" )
+
+#What's the relationship between Total Distance and Very Active minutes.
+clean_activity %>% 
+        ggplot(aes( x = very_active_minutes, y = total_distance)) +
+        geom_smooth() +
+        xlab( "Minutes" ) +
+        ylab( "Distance (Miles)" ) +
+        ggtitle( "Very Active Minutes vs. Total Distance" )
+
+#What's the relationship between Lightly Active Minutes and Total Distance
+clean_activity %>% 
+        ggplot(aes( x = lightly_active_minutes, y = total_distance)) +
+        geom_smooth() +
+        xlab( "Minutes" ) +
+        ylab( "Distance (Miles)" ) +
+        ggtitle( "Lightly Active vs. Total Distance" )
+
+
+#I wanted to dive more into the very_active_minutes and see if performance dropped after a certain time
+
+#What's the relationship between Very Active Minutes and Calories
+clean_activity %>% 
+        ggplot(aes( x = very_active_minutes, y = calories)) +
+        geom_smooth() +
+        xlab( "Minutes" ) +
+        ylab( "Calories" ) +
+        ggtitle( "Very Active Minutes vs. Calories" )
+
+#What's the relationship between Very Active Minutes and Logged Activities
+clean_activity %>% 
+        ggplot(aes( x = very_active_minutes, y = logged_activities_distance)) +
+        geom_point() +
+        xlab( "Minutes" ) +
+        ylab( "Logged Activites" ) +
+        ggtitle( "Very Active Minutes vs. Logged Activities" )
+
+#This one doesn't really work, since there isn't many who logged activities as is.
+
+#Quick note and insight, calories and activity seems to drop off after 15~ minutes.
+
+
+
+
