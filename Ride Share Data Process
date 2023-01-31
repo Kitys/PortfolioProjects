@@ -1,3 +1,5 @@
+Data was used from: https://www.kaggle.com/datasets/arashnic/fitbit
+
 ##STEP 1 - COLLECT DATA
 
 library(tidyverse)  #helps wrangle data
