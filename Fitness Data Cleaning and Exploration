@@ -1,3 +1,5 @@
+Data was pulled from: https://www.kaggle.com/datasets/arashnic/fitbit
+
 #Loading of our nescessary packages
 library(tidyverse)
 library(janitor)
