@@ -1,1 +1,33 @@
-Working to create a program to use EchoMTGs API system to receive daily updates on "Magic: the Gathering" card prices.
+##Working to create a program to use EchoMTGs API system to receive daily updates on "Magic: the Gathering" card prices.
+##New to working with Python (as of 1/31/2023), and using this as a project to gain expertise.
+
+##Temporary Simple Code as building blocks.
+
+##how to make a GET request to an API using requests:
+import requests
+
+url = "https://api.example.com/data"
+
+response = requests.get(url)
+
+if response.status_code == 200:
+    data = response.json()
+    # Do something with the data
+else:
+    # Handle the error
+
+##For inclusion of query parameters and request for the API calls:
+import requests
+
+url = "https://api.example.com/data"
+
+payload = {
+    "param1": "value1",
+    "param2": "value2"
+}
+
+headers = {
+    "Authorization": "Token 1234567890"
+}
+
+response = requests.get(url, params=payload, headers=headers)
